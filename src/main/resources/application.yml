@@ -1,5 +1,0 @@
-spring:
-  application:
-    name: eventshub
-  profiles:
-    active: dev
