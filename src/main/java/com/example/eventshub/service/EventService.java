@@ -2,6 +2,8 @@ package com.example.eventshub.service;
 
 import com.example.eventshub.dto.EventRequest;
 import com.example.eventshub.dto.EventResponse;
+import com.example.eventshub.messaging.EventCreatedMessage;
+import com.example.eventshub.messaging.EventProducer;
 import com.example.eventshub.model.Event;
 import com.example.eventshub.repository.EventRepository;
 import org.springframework.data.domain.Page;
@@ -16,8 +18,12 @@ import java.util.NoSuchElementException;
 public class EventService {
 
     private final EventRepository repo;
+    private final EventProducer producer;
 
-    public EventService(EventRepository repo) { this.repo = repo; }
+    public EventService(EventRepository repo, EventProducer producer) {
+        this.repo = repo;
+        this.producer = producer;
+    }
 
     /**
      * Creates a new event after validating business rules.
@@ -29,6 +35,10 @@ public class EventService {
         validateDates(request);
         Event entity = toEntity(request);
         Event saved = repo.save(entity);
+        producer.sendEventCreated(new EventCreatedMessage(
+                saved.getId(), saved.getTitle(), saved.getDescription(),
+                saved.getStartsAt(), saved.getEndsAt(), saved.getLocation()
+        ));
         return toResponse(saved);
     }
 
