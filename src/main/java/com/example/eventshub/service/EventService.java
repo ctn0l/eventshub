@@ -6,6 +6,8 @@ import com.example.eventshub.messaging.EventCreatedMessage;
 import com.example.eventshub.messaging.EventProducer;
 import com.example.eventshub.model.Event;
 import com.example.eventshub.repository.EventRepository;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -19,10 +21,16 @@ public class EventService {
 
     private final EventRepository repo;
     private final EventProducer producer;
+    private final Counter eventiCreatiCounter;
 
-    public EventService(EventRepository repo, EventProducer producer) {
+    public EventService(EventRepository repo, EventProducer producer, MeterRegistry meterRegistry) {
         this.repo = repo;
         this.producer = producer;
+        //  /actuator/metrics/eventi_creati
+        this.eventiCreatiCounter = Counter.builder("eventi_creati")
+                .description("Numero totale di eventi creati")
+                .tag("component", "event_service")
+                .register(meterRegistry);
     }
 
     /**
@@ -35,10 +43,13 @@ public class EventService {
         validateDates(request);
         Event entity = toEntity(request);
         Event saved = repo.save(entity);
+        // Pubblica evento su Kafka
         producer.sendEventCreated(new EventCreatedMessage(
                 saved.getId(), saved.getTitle(), saved.getDescription(),
                 saved.getStartsAt(), saved.getEndsAt(), saved.getLocation()
         ));
+        // Incrementa la metrica
+        eventiCreatiCounter.increment();
         return toResponse(saved);
     }
 

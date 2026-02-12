@@ -21,3 +21,13 @@ logging:
   level:
     root: INFO
     org.springframework.security: INFO
+
+management:
+  info:
+    defaults:
+      enabled: true
+
+info:
+  app:
+    name: eventshub
+    version: 0.0.1
